@@ -52,14 +52,6 @@ fun EditorRoute(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "编辑 Markdown",
-            style = MaterialTheme.typography.headlineSmall
-        )
-        Text(
-            text = state.title.ifBlank { "未识别标题，将在后续渲染阶段兜底生成" },
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Text(
             text = "Markdown",
             style = MaterialTheme.typography.labelMedium
         )

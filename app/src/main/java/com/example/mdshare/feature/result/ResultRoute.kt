@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -33,11 +32,6 @@ fun ResultRoute(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = "结果",
-            style = MaterialTheme.typography.headlineSmall
-        )
-
         errorMessage?.let { message ->
             Text(
                 text = message,
@@ -64,13 +58,22 @@ fun ResultRoute(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Button(onClick = onSave) {
-                Text(if (hasSavedImage) "已保存到相册" else "保存相册")
+            Button(
+                onClick = onSave,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(if (hasSavedImage) "已保存" else "保存相册")
             }
-            Button(onClick = onShare) {
+            Button(
+                onClick = onShare,
+                modifier = Modifier.weight(1f)
+            ) {
                 Text("立即分享")
             }
-            OutlinedButton(onClick = onEditAgain) {
+            Button(
+                onClick = onEditAgain,
+                modifier = Modifier.weight(1f)
+            ) {
                 Text("重新编辑")
             }
         }

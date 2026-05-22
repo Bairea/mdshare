@@ -43,11 +43,6 @@ fun PreviewRoute(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = "预览",
-            style = MaterialTheme.typography.headlineSmall
-        )
-
         errorMessage?.let { message ->
             Text(
                 text = message,
