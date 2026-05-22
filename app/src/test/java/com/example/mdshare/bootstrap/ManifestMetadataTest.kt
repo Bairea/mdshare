@@ -49,7 +49,19 @@ class ManifestMetadataTest {
     }
 
     @Test
-    fun `launcher icons have transparent corners`() {
+    fun `launcher icons use adaptive icon configuration`() {
+        val adaptiveIconXml = File("src/main/res/mipmap-anydpi-v26/ic_launcher.xml")
+        assertTrue("adaptive icon XML is missing", adaptiveIconXml.isFile)
+        val xmlContent = adaptiveIconXml.readText()
+        assertTrue(xmlContent.contains("adaptive-icon"))
+        assertTrue(xmlContent.contains("ic_launcher_background"))
+        assertTrue(xmlContent.contains("ic_launcher_foreground"))
+        assertTrue(File("src/main/res/drawable/ic_launcher_background.xml").isFile)
+        assertTrue(File("src/main/res/drawable/ic_launcher_foreground.xml").isFile)
+    }
+
+    @Test
+    fun `fallback png icons have rounded rectangle shape`() {
         listOf(
             "src/main/res/mipmap-mdpi/ic_launcher.png",
             "src/main/res/mipmap-hdpi/ic_launcher.png",
@@ -58,14 +70,17 @@ class ManifestMetadataTest {
             "src/main/res/mipmap-xxxhdpi/ic_launcher.png"
         ).forEach { path ->
             val image = BitmapFactory.decodeFile(path)
+            val w = image.width
+            val h = image.height
 
-            assertTrue("$path top left is not transparent", alphaAt(image.getPixel(0, 0)) < 16)
-            assertTrue("$path top right is not transparent", alphaAt(image.getPixel(image.width - 1, 0)) < 16)
-            assertTrue("$path bottom left is not transparent", alphaAt(image.getPixel(0, image.height - 1)) < 16)
-            assertTrue(
-                "$path bottom right is not transparent",
-                alphaAt(image.getPixel(image.width - 1, image.height - 1)) < 16
-            )
+            // Corners are transparent (rounded shape)
+            assertTrue("$path TL corner not transparent", alphaAt(image.getPixel(0, 0)) < 16)
+            assertTrue("$path TR corner not transparent", alphaAt(image.getPixel(w - 1, 0)) < 16)
+            assertTrue("$path BL corner not transparent", alphaAt(image.getPixel(0, h - 1)) < 16)
+            assertTrue("$path BR corner not transparent", alphaAt(image.getPixel(w - 1, h - 1)) < 16)
+
+            // Center is fully opaque (content present)
+            assertTrue("$path center not opaque", alphaAt(image.getPixel(w / 2, h / 2)) == 255)
         }
     }
 

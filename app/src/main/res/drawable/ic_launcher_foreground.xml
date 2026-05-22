@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Folded document card body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M22,32Q22,28 26,28L58,28L86,58L86,78Q86,82 82,82L26,82Q22,82 22,78Z" />
+
+    <!-- Text lines simulating markdown content -->
+    <path
+        android:strokeColor="#454BD4"
+        android:strokeWidth="4.2"
+        android:strokeLineCap="round"
+        android:pathData="M36,44L70,44M36,54L72,54M36,64L56,64" />
+</vector>
