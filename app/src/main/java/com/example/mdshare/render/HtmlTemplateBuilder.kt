@@ -15,7 +15,6 @@ class HtmlTemplateBuilder(
         <body>
           <div class="render-stage">
             <main class="render-card" style="width:${theme.canvasWidthPx}px">
-              <div class="render-label">${theme.titleLabel}</div>
               <div class="render-content">$bodyHtml</div>
             </main>
           </div>

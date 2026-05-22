@@ -1,6 +1,7 @@
 package com.example.mdshare.render
 
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class MarkdownPipelineTest {
@@ -27,5 +28,19 @@ class MarkdownPipelineTest {
         assertTrue(html.contains("highlight.min.js"))
         assertTrue(html.contains("render.css"))
         assertTrue(html.contains("width:1080px"))
+    }
+
+    @Test
+    fun `does not add a default title label to rendered image html`() {
+        val html = MarkdownPipeline().buildHtml(
+            """
+            # Daily Note
+
+            Body content.
+            """.trimIndent()
+        )
+
+        assertFalse(html.contains("render-label"))
+        assertFalse(html.contains("AI 摘要"))
     }
 }

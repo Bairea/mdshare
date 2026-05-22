@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
@@ -33,6 +34,13 @@ class WebViewImageRenderer(
             "renderBlocking must not run on the main thread"
         }
 
+        val exportHtml = html.replace(
+            "width=device-width, initial-scale=1.0",
+            "width=${theme.canvasWidthPx}, initial-scale=1.0"
+        )
+        val density = context.resources.displayMetrics.density
+        val initialScale = (100f / density).toInt().coerceIn(25, 100)
+
         val latch = CountDownLatch(1)
         var result: RenderResult? = null
         var failure: Throwable? = null
@@ -50,16 +58,19 @@ class WebViewImageRenderer(
             webView.settings.javaScriptEnabled = true
             webView.settings.domStorageEnabled = true
             webView.settings.useWideViewPort = true
-            webView.settings.loadWithOverviewMode = true
+            webView.settings.loadWithOverviewMode = false
             webView.settings.cacheMode = WebSettings.LOAD_NO_CACHE
             webView.setBackgroundColor(Color.WHITE)
             webView.clearCache(true)
+            Log.d("MdShare", "renderBlocking: density=$density initialScale=$initialScale canvasWidthPx=${theme.canvasWidthPx}")
             webView.webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     val safeView = view ?: run {
                         complete(throwable = IllegalStateException("WebView became null after load"))
                         return
                     }
+                    safeView.setInitialScale(initialScale)
+                    Log.d("MdShare", "renderBlocking onPageFinished: applied setInitialScale=$initialScale")
                     awaitRenderReady(
                         webView = safeView,
                         onReady = {
@@ -87,9 +98,21 @@ class WebViewImageRenderer(
                     }
                 }
             }
+            val preMeasureWidthSpec = android.view.View.MeasureSpec.makeMeasureSpec(
+                theme.canvasWidthPx,
+                android.view.View.MeasureSpec.EXACTLY
+            )
+            val preMeasureHeightSpec = android.view.View.MeasureSpec.makeMeasureSpec(
+                1,
+                android.view.View.MeasureSpec.EXACTLY
+            )
+            webView.measure(preMeasureWidthSpec, preMeasureHeightSpec)
+            webView.layout(0, 0, webView.measuredWidth, webView.measuredHeight)
+            Log.d("MdShare", "renderBlocking pre-measure: ${webView.measuredWidth}x${webView.measuredHeight} canvasWidthPx=${theme.canvasWidthPx}")
+
             webView.loadDataWithBaseURL(
                 "file:///android_asset/render/",
-                html,
+                exportHtml,
                 "text/html",
                 "utf-8",
                 null
@@ -140,10 +163,19 @@ class WebViewImageRenderer(
         onSuccess: (RenderResult) -> Unit,
         onFailure: (Throwable) -> Unit
     ) {
+        val originalScrollX = webView.scrollX
+        val originalScrollY = webView.scrollY
+        webView.scrollTo(0, 0)
+
         setExportMode(
             webView = webView,
             enabled = true,
             onSuccess = {
+                webView.settings.loadWithOverviewMode = false
+                val density = context.resources.displayMetrics.density
+                val initialScale = (100f / density).toInt().coerceIn(25, 100)
+                webView.setInitialScale(initialScale)
+                Log.d("MdShare", "captureExistingWebView: locked loadWithOverviewMode=false initialScale=$initialScale density=$density")
                 awaitRenderReady(
                     webView = webView,
                     onReady = {
@@ -153,6 +185,8 @@ class WebViewImageRenderer(
                                 restorePreviewMode(
                                     webView = webView,
                                     renderResult = renderResult,
+                                    scrollX = originalScrollX,
+                                    scrollY = originalScrollY,
                                     onSuccess = onSuccess,
                                     onFailure = onFailure
                                 )
@@ -161,6 +195,8 @@ class WebViewImageRenderer(
                                 restorePreviewMode(
                                     webView = webView,
                                     throwable = throwable,
+                                    scrollX = originalScrollX,
+                                    scrollY = originalScrollY,
                                     onSuccess = onSuccess,
                                     onFailure = onFailure
                                 )
@@ -171,13 +207,18 @@ class WebViewImageRenderer(
                         restorePreviewMode(
                             webView = webView,
                             throwable = throwable,
+                            scrollX = originalScrollX,
+                            scrollY = originalScrollY,
                             onSuccess = onSuccess,
                             onFailure = onFailure
                         )
                     }
                 )
             },
-            onFailure = onFailure
+            onFailure = { throwable ->
+                webView.scrollTo(originalScrollX, originalScrollY)
+                onFailure(throwable)
+            }
         )
     }
 
@@ -205,8 +246,10 @@ class WebViewImageRenderer(
             }
 
             if (domReady && status.height > 0 && nextStablePasses >= REQUIRED_STABLE_PASSES) {
+                Log.d("MdShare", "awaitRenderReady STABLE: height=${status.height} passes=$nextStablePasses")
                 webView.postDelayed(onReady, CAPTURE_DELAY_MS)
             } else {
+                Log.d("MdShare", "awaitRenderReady POLL: height=${status.height} ready=${status.ready} readyState=${status.readyState} stablePasses=$nextStablePasses prevHeight=$previousHeight")
                 webView.postDelayed(
                     {
                         awaitRenderReady(
@@ -238,6 +281,7 @@ class WebViewImageRenderer(
                 ?.replace("\\\"", "\"")
                 ?.trim()
                 .orEmpty()
+            Log.d("MdShare", "setExportMode($enabled): result=$result")
             if (result == "missing") {
                 onFailure(IllegalStateException("Render page does not expose export mode controls"))
             } else {
@@ -250,6 +294,8 @@ class WebViewImageRenderer(
         webView: WebView,
         renderResult: RenderResult? = null,
         throwable: Throwable? = null,
+        scrollX: Int = webView.scrollX,
+        scrollY: Int = webView.scrollY,
         onSuccess: (RenderResult) -> Unit,
         onFailure: (Throwable) -> Unit
     ) {
@@ -257,11 +303,15 @@ class WebViewImageRenderer(
             webView = webView,
             enabled = false,
             onSuccess = {
+                webView.settings.loadWithOverviewMode = true
+                webView.scrollTo(scrollX, scrollY)
                 renderResult?.let(onSuccess) ?: onFailure(
                     throwable ?: IllegalStateException("Failed to capture rendered WebView")
                 )
             },
             onFailure = { resetFailure ->
+                webView.settings.loadWithOverviewMode = true
+                webView.scrollTo(scrollX, scrollY)
                 renderResult?.let(onSuccess) ?: onFailure(throwable ?: resetFailure)
             }
         )
@@ -319,6 +369,7 @@ class WebViewImageRenderer(
                 ?.toIntOrNull()
 
             if (captureHeight != null && captureHeight > 0) {
+                Log.d("MdShare", "readCaptureHeight: captureHeight=$captureHeight (CSS px from JS)")
                 onSuccess(captureHeight)
             } else {
                 onFailure(IllegalStateException("Failed to read capture height from rendered page"))
@@ -327,6 +378,7 @@ class WebViewImageRenderer(
     }
 
     private fun WebView.captureBitmap(targetWidth: Int, targetHeightHint: Int? = null): RenderResult {
+        val density = resources.displayMetrics.density
         val widthSpec = android.view.View.MeasureSpec.makeMeasureSpec(
             targetWidth,
             android.view.View.MeasureSpec.EXACTLY
@@ -335,10 +387,13 @@ class WebViewImageRenderer(
             0,
             android.view.View.MeasureSpec.UNSPECIFIED
         )
+        Log.d("MdShare", "captureBitmap: BEFORE measure1 targetWidth=$targetWidth density=$density")
         measure(widthSpec, unspecifiedHeightSpec)
+        Log.d("MdShare", "captureBitmap: AFTER measure1 measuredW=$measuredWidth measuredH=$measuredHeight contentH=$contentHeight")
 
-        val contentHeightPx = ceil(contentHeight * resources.displayMetrics.density).toInt()
+        val contentHeightPx = ceil(contentHeight.toFloat() * measuredWidth / theme.canvasWidthPx).toInt()
         val targetHeight = targetHeightHint?.takeIf { it > 0 } ?: max(max(measuredHeight, contentHeightPx), 1)
+        Log.d("MdShare", "captureBitmap: contentHeightPx=$contentHeightPx targetHeightHint=$targetHeightHint targetHeight=$targetHeight")
 
         val heightSpec = android.view.View.MeasureSpec.makeMeasureSpec(
             targetHeight,
@@ -346,12 +401,14 @@ class WebViewImageRenderer(
         )
         measure(widthSpec, heightSpec)
         layout(0, 0, measuredWidth, targetHeight)
+        Log.d("MdShare", "captureBitmap: AFTER measure2+layout measuredW=$measuredWidth measuredH=$measuredHeight layoutH=$targetHeight")
 
         val safeWidth = max(measuredWidth, 1)
         val bitmap = Bitmap.createBitmap(safeWidth, targetHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.drawColor(Color.WHITE)
         draw(canvas)
+        Log.d("MdShare", "captureBitmap: RESULT bitmap=${bitmap.width}x${bitmap.height} safeWidth=$safeWidth")
 
         return RenderResult(
             bitmap = bitmap,
