@@ -26,7 +26,11 @@ class RenderAssetsTest {
     fun `render css separates typography for body code and tables`() {
         val css = File("src/main/assets/render/render.css").readText()
 
-        assertTrue(css.contains("font-size: 26px"))
+        assertTrue(css.contains("font-size: 18px"))
+        assertTrue(css.contains("h1 {"))
+        assertTrue(css.contains("font-size: 48px"))
+        assertTrue(css.contains("h2 {"))
+        assertTrue(css.contains("font-size: 38px"))
         assertTrue(css.contains("--render-scale"))
         assertTrue(css.contains("transform: scale(var(--render-scale, 1))"))
         assertTrue(css.contains("font-family: \"Cascadia Code\""))
@@ -34,9 +38,39 @@ class RenderAssetsTest {
         assertTrue(css.contains("overflow-wrap: break-word"))
         assertTrue(css.contains("table.compact-table"))
         assertTrue(css.contains("table:not(.compact-table)"))
-        assertTrue(css.contains("font-size: 16px"))
-        assertTrue(css.contains("font-size: 14px"))
-        assertTrue(css.contains("font-size: 14px"))
+        assertTrue(css.contains("font-size: 15px"))
+        assertTrue(css.contains("font-size: 13px"))
+        assertTrue(css.contains("font-size: 13px"))
         assertTrue(css.contains("table.compact-table"))
+    }
+
+    @Test
+    fun `highlight theme defines token colors`() {
+        val css = File("src/main/assets/render/highlight-theme.css").readText()
+
+        assertTrue(css.contains(".hljs-keyword"))
+        assertTrue(css.contains(".hljs-string"))
+        assertTrue(css.contains(".hljs-title"))
+        assertTrue(css.contains(".hljs-comment"))
+    }
+
+    @Test
+    fun `highlight script emits syntax token spans`() {
+        val script = File("src/main/assets/render/highlight.min.js").readText()
+
+        assertTrue(script.contains("hljs-keyword"))
+        assertTrue(script.contains("class=\"hljs-"))
+        assertTrue(script.contains("innerHTML"))
+        assertTrue(script.contains("textContent"))
+    }
+
+    @Test
+    fun `export mode has fixed canvas layout rules`() {
+        val css = File("src/main/assets/render/render.css").readText()
+
+        assertTrue(css.contains(".md-share-export-mode .render-stage"))
+        assertTrue(css.contains("width: 1080px"))
+        assertTrue(css.contains("overflow: visible"))
+        assertTrue(css.contains("transform: none"))
     }
 }

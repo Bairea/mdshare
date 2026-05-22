@@ -27,11 +27,21 @@ body {
   transform: scale(var(--render-scale, 1));
 }
 
-.render-label {
-  margin-bottom: 14px;
-  color: #4f46e5;
-  font-size: 24px;
-  font-weight: 700;
+.md-share-export-mode body {
+  width: 1080px;
+}
+
+.md-share-export-mode .render-stage {
+  width: 1080px;
+  min-width: 1080px;
+  display: block;
+  overflow: visible;
+}
+
+.md-share-export-mode .render-card {
+  margin-left: 0;
+  margin-right: 0;
+  transform: none;
 }
 
 .render-content > :first-child {
@@ -50,12 +60,32 @@ h5,
 h6 {
   color: #0f172a;
   line-height: 1.25;
+  margin: 28px 0 18px;
+  font-weight: 800;
+}
+
+h1 {
+  font-size: 48px;
+}
+
+h2 {
+  font-size: 38px;
+}
+
+h3 {
+  font-size: 30px;
+}
+
+h4,
+h5,
+h6 {
+  font-size: 24px;
 }
 
 p,
 li,
 blockquote {
-  font-size: 26px;
+  font-size: 18px;
   line-height: 1.7;
 }
 
@@ -67,11 +97,11 @@ table {
 }
 
 table:not(.compact-table) {
-  font-size: 16px;
+  font-size: 15px;
 }
 
 table.compact-table {
-  font-size: 14px;
+  font-size: 13px;
 }
 
 th,
@@ -106,8 +136,8 @@ pre code {
   overflow-wrap: break-word;
   word-break: normal;
   tab-size: 2;
-  font-size: 14px;
-  line-height: 1.35;
+  font-size: 16px;
+  line-height: 1.45;
 }
 
 pre code.hljs {

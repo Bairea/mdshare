@@ -26,8 +26,29 @@ function updateRenderScale() {
 window.__MD_SHARE_SET_EXPORT_MODE__ = function (enabled) {
   window.__MD_SHARE_EXPORT_MODE__ = enabled === true;
   document.documentElement.classList.toggle("md-share-export-mode", window.__MD_SHARE_EXPORT_MODE__);
+
+  var vpBefore = "";
+  var vpAfter = "";
+  var viewportMeta = document.querySelector('meta[name="viewport"]');
+  if (viewportMeta) {
+    vpBefore = viewportMeta.getAttribute("content") || "";
+    if (window.__MD_SHARE_EXPORT_MODE__) {
+      var card = document.querySelector(".render-card");
+      var canvasWidth = card ? card.offsetWidth : 1080;
+      viewportMeta.setAttribute("content", "width=" + canvasWidth + ", initial-scale=1.0");
+    } else {
+      viewportMeta.setAttribute("content", "width=device-width, initial-scale=1.0");
+    }
+    vpAfter = viewportMeta.getAttribute("content") || "";
+  }
+
   updateRenderScale();
-  return window.__MD_SHARE_EXPORT_MODE__ ? "export" : "preview";
+  var result = window.__MD_SHARE_EXPORT_MODE__ ? "export" : "preview";
+  console.log("[MdShare] SET_EXPORT_MODE(" + enabled + ") -> " + result +
+    " | vp: '" + vpBefore + "' -> '" + vpAfter +
+    "' | dpr=" + window.devicePixelRatio +
+    " | render-scale=" + getComputedStyle(document.documentElement).getPropertyValue("--render-scale"));
+  return result;
 };
 
 document.addEventListener("DOMContentLoaded", function () {
