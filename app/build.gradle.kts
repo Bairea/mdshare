@@ -1,11 +1,26 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
 
+val localProperties = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.let { load(it.inputStream()) }
+}
+
 android {
     namespace = "com.example.mdshare"
     compileSdk = 34
+
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file("app/" + (localProperties["RELEASE_STORE_FILE"] as? String ?: "mdshare-release.keystore"))
+            storePassword = localProperties["RELEASE_STORE_PASSWORD"] as? String ?: ""
+            keyAlias = localProperties["RELEASE_KEY_ALIAS"] as? String ?: ""
+            keyPassword = localProperties["RELEASE_KEY_PASSWORD"] as? String ?: ""
+        }
+    }
 
     defaultConfig {
         applicationId = "com.example.mdshare"
@@ -19,6 +34,7 @@ android {
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
